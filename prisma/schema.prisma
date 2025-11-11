@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Trip memberships
+  tripMembers TripMember[]
+
+  // Trips where this user is central money keeper
+  tripsAsMoneyKeeper Trip[]
+
+  // Expenses created by this user
+  expensesCreated Expense[]
+
+  // Expense participants
+  expenseParticipants ExpenseParticipant[]
+
+  // Payments made by this user
+  paymentsMade Payment[] @relation("PaymentPayer")
+
+  // Payments received by this user
+  paymentsReceived Payment[] @relation("PaymentReceiver")
+
+  // Ad-hoc payments to central money keeper
+  adhocPaymentsMade AdhocPayment[] @relation("AdhocPaymentPayer")
+
+  // Ad-hoc payments received as central money keeper
+  adhocPaymentsReceived AdhocPayment[] @relation("AdhocPaymentReceiver")
+
+  @@map("users")
+}
+
+model Trip {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  currency    String   @default("USD")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Central money keeper for this trip
+  centralMoneyKeeperId String?
+  centralMoneyKeeper   User?   @relation(fields: [centralMoneyKeeperId], references: [id])
+
+  // Trip members
+  members   TripMember[]
+
+  // Expenses for this trip
+  expenses  Expense[]
+
+  // Payments within this trip
+  payments  Payment[]
+
+  // Ad-hoc payments to central money keeper
+  adhocPayments AdhocPayment[]
+
+  @@map("trips")
+}
+
+model TripMember {
+  id     String @id @default(cuid())
+  tripId String
+  userId String
+  role   String @default("MEMBER") // "ADMIN" or "MEMBER"
+
+  trip   Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([tripId, userId])
+  @@map("trip_members")
+}
+
+model Expense {
+  id          String      @id @default(cuid())
+  title       String
+  description String?
+  amount      Float
+  currency    String      @default("USD")
+  category    String @default("GENERAL") // "FOOD", "TRANSPORT", "ACCOMMODATION", "ENTERTAINMENT", "SHOPPING", "GENERAL"
+  date        DateTime    @default(now())
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Who paid for this expense
+  paidById    String
+  paidBy      User        @relation(fields: [paidById], references: [id])
+
+  // Which trip this expense belongs to
+  tripId      String
+  trip        Trip        @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  // How the expense is split
+  splitType   String   @default("EQUAL") // "EQUAL", "EXACT_AMOUNTS", "PERCENTAGES"
+
+  // Participants in this expense
+  participants ExpenseParticipant[]
+
+  @@map("expenses")
+}
+
+
+model ExpenseParticipant {
+  id        String @id @default(cuid())
+  expenseId String
+  userId    String
+  amount    Float  // Amount this user owes for this expense
+
+  expense   Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([expenseId, userId])
+  @@map("expense_participants")
+}
+
+model Payment {
+  id          String   @id @default(cuid())
+  amount      Float
+  currency    String   @default("USD")
+  description String?
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  // Who made the payment
+  payerId     String
+  payer       User     @relation("PaymentPayer", fields: [payerId], references: [id])
+
+  // Who received the payment
+  receiverId  String
+  receiver    User     @relation("PaymentReceiver", fields: [receiverId], references: [id])
+
+  // Which trip this payment belongs to
+  tripId      String
+  trip        Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model AdhocPayment {
+  id          String   @id @default(cuid())
+  amount      Float
+  currency    String   @default("USD")
+  description String?
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  // Who made the ad-hoc payment
+  payerId     String
+  payer       User     @relation("AdhocPaymentPayer", fields: [payerId], references: [id])
+
+  // Who received the payment (central money keeper)
+  receiverId  String
+  receiver    User     @relation("AdhocPaymentReceiver", fields: [receiverId], references: [id])
+
+  // Which trip this payment belongs to
+  tripId      String
+  trip        Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@map("adhoc_payments")
+}
