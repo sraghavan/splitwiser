@@ -4,9 +4,6 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "outputDirectory": ".next",
-  "env": {
-    "DATABASE_URL": "file:./dev.db"
-  },
   "functions": {
     "pages/api/**/*.js": {
       "maxDuration": 10

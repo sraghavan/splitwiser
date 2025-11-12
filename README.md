@@ -70,23 +70,43 @@ A comprehensive expense sharing application built with Next.js, TypeScript, and 
 
 ## 📦 Installation & Setup
 
+### Local Development
 1. **Install Dependencies**:
    ```bash
    npm install
    ```
 
-2. **Initialize Database**:
+2. **Set up Environment Variables**:
    ```bash
-   npm run db:push
+   cp .env.example .env.local
+   # Edit .env.local with your database URL
    ```
 
-3. **Start Development Server**:
+3. **Set up Database**:
+   ```bash
+   npm run db:setup
+   ```
+
+4. **Start Development Server**:
    ```bash
    npm run dev
    ```
 
-4. **Open in Browser**:
+5. **Open in Browser**:
    Navigate to `http://localhost:3000`
+
+### Production Deployment with Database
+
+🎯 **Quick Deploy**: See [DATABASE_SETUP.md](./DATABASE_SETUP.md) for complete guide
+
+1. **Create free database** on [Supabase](https://supabase.com)
+2. **Deploy to Vercel** with environment variables
+3. **Set up database schema** automatically on first deploy
+
+**Free Database Options:**
+- **Supabase**: 500MB PostgreSQL (Recommended)
+- **Neon**: 512MB PostgreSQL
+- **Railway**: $5/month credits
 
 ## 📋 Database Schema
 
