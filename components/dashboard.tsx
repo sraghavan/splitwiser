@@ -48,7 +48,7 @@ export default function Dashboard() {
     const newTrip: Trip = {
       id: Math.random().toString(36).substr(2, 9),
       ...tripData,
-      centralMoneyKeeperName: tripData.centralMoneyKeeperId === user?.id ? user.name : undefined,
+      centralMoneyKeeperName: tripData.centralMoneyKeeperId === user?.id ? user?.name : undefined,
       members: [{
         id: user!.id,
         name: user!.name,

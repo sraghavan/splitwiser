@@ -57,7 +57,9 @@ export default function TripList({ trips, onSelectTrip }: TripListProps) {
                 )}
               </div>
               {trip.centralMoneyKeeperId && (
-                <Crown className="h-4 w-4 text-yellow-500" title="Has Central Money Keeper" />
+                <div title="Has Central Money Keeper">
+                  <Crown className="h-4 w-4 text-yellow-500" />
+                </div>
               )}
             </div>
           </CardHeader>

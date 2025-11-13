@@ -22,6 +22,7 @@ interface Trip {
 
 interface Expense {
   id: string
+  amount: number
   paidById: string
   participants: Array<{
     id: string
