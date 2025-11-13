@@ -10,6 +10,7 @@ import AddExpenseDialog from '@/components/add-expense-dialog'
 import ExpenseList from '@/components/expense-list'
 import BalancesSummary from '@/components/balances-summary'
 import CentralMoneyKeeperPanel from '@/components/central-money-keeper-panel'
+import DatabaseStatusMonitor from '@/components/database-status-monitor'
 
 interface Trip {
   id: string
@@ -329,6 +330,9 @@ export default function ExpenseTracker({ trip, onBack, onUpdateTrip }: ExpenseTr
           trip={trip}
           onAddExpense={addExpense}
         />
+
+        {/* Database Status Monitor */}
+        <DatabaseStatusMonitor />
       </div>
     </div>
   )

@@ -8,6 +8,7 @@ import { Plus, Users, DollarSign, TrendingUp, Settings } from 'lucide-react'
 import TripList from '@/components/trip-list'
 import CreateTripDialog from '@/components/create-trip-dialog'
 import ExpenseTracker from '@/components/expense-tracker'
+import DatabaseStatusMonitor from '@/components/database-status-monitor'
 
 interface Trip {
   id: string
@@ -186,6 +187,9 @@ export default function Dashboard() {
           onOpenChange={setShowCreateTrip}
           onCreateTrip={createTrip}
         />
+
+        {/* Database Status Monitor */}
+        <DatabaseStatusMonitor />
       </main>
     </div>
   )
