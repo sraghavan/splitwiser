@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Database, Wifi, WifiOff, CheckCircle, XCircle, AlertCircle, RefreshCw } from 'lucide-react'
+import { Database, Wifi, WifiOff, CheckCircle, XCircle, AlertCircle, RefreshCw, Settings, Eye, EyeOff, Save } from 'lucide-react'
 
 interface DatabaseStatus {
   connected: boolean
@@ -24,6 +26,7 @@ interface SyncStatus {
 export default function DatabaseStatusMonitor() {
   const { user } = useAuth()
   const [showModal, setShowModal] = useState(false)
+  const [showConfig, setShowConfig] = useState(false)
   const [dbStatus, setDbStatus] = useState<DatabaseStatus>({
     connected: false,
     lastChecked: 'Never'
@@ -35,6 +38,15 @@ export default function DatabaseStatusMonitor() {
     lastSync: 'Never'
   })
   const [isChecking, setIsChecking] = useState(false)
+
+  // Database configuration state
+  const [dbHost, setDbHost] = useState('db.mumrjrygguwlmasnbfrf.supabase.co')
+  const [dbPassword, setDbPassword] = useState('')
+  const [dbUser, setDbUser] = useState('postgres')
+  const [dbName, setDbName] = useState('postgres')
+  const [dbPort, setDbPort] = useState('5432')
+  const [showPassword, setShowPassword] = useState(false)
+  const [customDbUrl, setCustomDbUrl] = useState('')
 
   const checkDatabaseConnection = async () => {
     setIsChecking(true)
@@ -86,7 +98,82 @@ export default function DatabaseStatusMonitor() {
 
   useEffect(() => {
     checkSyncStatus()
+    loadSavedDbConfig()
   }, [dbStatus])
+
+  const loadSavedDbConfig = () => {
+    const savedConfig = localStorage.getItem('db_config')
+    if (savedConfig) {
+      const config = JSON.parse(savedConfig)
+      setDbHost(config.host || 'db.mumrjrygguwlmasnbfrf.supabase.co')
+      setDbPassword(config.password || '')
+      setDbUser(config.user || 'postgres')
+      setDbName(config.database || 'postgres')
+      setDbPort(config.port || '5432')
+      setCustomDbUrl(config.fullUrl || '')
+    }
+  }
+
+  const saveDbConfig = () => {
+    const connectionUrl = customDbUrl || `postgresql://${dbUser}:${dbPassword}@${dbHost}:${dbPort}/${dbName}`
+
+    const config = {
+      host: dbHost,
+      password: dbPassword,
+      user: dbUser,
+      database: dbName,
+      port: dbPort,
+      fullUrl: connectionUrl,
+      lastUpdated: new Date().toISOString()
+    }
+
+    localStorage.setItem('db_config', JSON.stringify(config))
+
+    // Show success message
+    alert('Database configuration saved! Use "Test Connection" to verify.')
+    setShowConfig(false)
+  }
+
+  const testWithCustomConfig = async () => {
+    const connectionUrl = customDbUrl || `postgresql://${dbUser}:${dbPassword}@${dbHost}:${dbPort}/${dbName}`
+
+    setIsChecking(true)
+    const startTime = Date.now()
+
+    try {
+      const response = await fetch('/api/health', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ connectionUrl })
+      })
+
+      const responseTime = Date.now() - startTime
+
+      if (response.ok) {
+        setDbStatus({
+          connected: true,
+          lastChecked: new Date().toLocaleTimeString(),
+          responseTime
+        })
+        alert('✅ Connection successful!')
+      } else {
+        const error = await response.text()
+        setDbStatus({
+          connected: false,
+          lastChecked: new Date().toLocaleTimeString(),
+          error: `HTTP ${response.status}: ${error}`
+        })
+      }
+    } catch (error) {
+      setDbStatus({
+        connected: false,
+        lastChecked: new Date().toLocaleTimeString(),
+        error: error instanceof Error ? error.message : 'Connection failed'
+      })
+    } finally {
+      setIsChecking(false)
+    }
+  }
 
   const getStatusIcon = () => {
     if (!dbStatus.connected) {
@@ -237,6 +324,138 @@ export default function DatabaseStatusMonitor() {
                   </div>
                 )}
               </CardContent>
+            </Card>
+
+            {/* Database Configuration */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Settings className="h-5 w-5" />
+                    <span>Database Configuration</span>
+                  </div>
+                  <Button
+                    onClick={() => setShowConfig(!showConfig)}
+                    size="sm"
+                    variant="outline"
+                  >
+                    {showConfig ? 'Hide' : 'Configure'}
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              {showConfig && (
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="db-host">Host</Label>
+                      <Input
+                        id="db-host"
+                        value={dbHost}
+                        onChange={(e) => setDbHost(e.target.value)}
+                        placeholder="db.your-project.supabase.co"
+                        className="text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="db-port">Port</Label>
+                      <Input
+                        id="db-port"
+                        value={dbPort}
+                        onChange={(e) => setDbPort(e.target.value)}
+                        placeholder="5432"
+                        className="text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="db-user">Username</Label>
+                      <Input
+                        id="db-user"
+                        value={dbUser}
+                        onChange={(e) => setDbUser(e.target.value)}
+                        placeholder="postgres"
+                        className="text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="db-name">Database</Label>
+                      <Input
+                        id="db-name"
+                        value={dbName}
+                        onChange={(e) => setDbName(e.target.value)}
+                        placeholder="postgres"
+                        className="text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="db-password">Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="db-password"
+                        type={showPassword ? 'text' : 'password'}
+                        value={dbPassword}
+                        onChange={(e) => setDbPassword(e.target.value)}
+                        placeholder="Enter your database password"
+                        className="text-sm pr-10"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="custom-url">Or use full connection URL</Label>
+                    <Input
+                      id="custom-url"
+                      value={customDbUrl}
+                      onChange={(e) => setCustomDbUrl(e.target.value)}
+                      placeholder="postgresql://user:pass@host:port/database"
+                      className="text-sm"
+                    />
+                    <div className="text-xs text-gray-500">
+                      Leave empty to use individual fields above
+                    </div>
+                  </div>
+
+                  <div className="flex space-x-2">
+                    <Button
+                      onClick={testWithCustomConfig}
+                      disabled={isChecking}
+                      size="sm"
+                      className="flex-1"
+                    >
+                      {isChecking ? (
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Wifi className="h-4 w-4 mr-2" />
+                      )}
+                      Test Connection
+                    </Button>
+                    <Button
+                      onClick={saveDbConfig}
+                      size="sm"
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Config
+                    </Button>
+                  </div>
+
+                  <div className="text-xs text-gray-500 bg-blue-50 p-3 rounded">
+                    <strong>Note:</strong> This saves configuration locally only.
+                    For production deployment, update your environment variables in Vercel.
+                  </div>
+                </CardContent>
+              )}
             </Card>
 
             {/* Storage Information */}
